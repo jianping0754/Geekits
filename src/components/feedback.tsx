@@ -17,7 +17,7 @@ export default class extends React.Component<{}, State> {
 	}
 	sendData() {
 		const { content, contact } = this.state;
-		window.loadShow();
+		window.showGlobalLoadingOverlay();
 		fetch("https://api.ygktool.cn/ygktool/feedback", {
 			method: "POST",
 			headers: {
@@ -35,7 +35,7 @@ export default class extends React.Component<{}, State> {
 				snackbar({ message: "出错了！" + err });
 			})
 			.then(() => {
-				window.loadHide();
+				window.hideGlobalLoadingOverlay();
 			});
 	}
 	render() {

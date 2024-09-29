@@ -11,13 +11,16 @@ import {
 	useTheme,
 	IconButton,
 	Chip,
+	ListItemSecondaryAction,
 } from "@mui/material";
 import {
 	RefreshRounded as RefreshIcon,
 	Close as CloseIcon,
+	Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import Text from "@/components/i18n";
 
 const PREFIX = "RandomChooser";
 
@@ -30,8 +33,8 @@ const classes = {
 
 const StyledBox = styled(Box)(({ theme }) => ({
 	[`&.${classes.root}`]: {
-		maxWidth: "600px",
-		margin: "0 auto",
+		maxWidth: "100vw",
+		// margin: "0 auto",
 		padding: theme.spacing(3),
 	},
 	[`& .${classes.wheel}`]: {
@@ -74,8 +77,12 @@ const RandomChooser = () => {
 	const handleSpin = () => {
 		const newIndex = Math.floor(Math.random() * items.length);
 		const extraRotations = 360 * 5; // 5 full rotations
+		const offset = items.length === 4 ? 45 : 0; // Adjust offset for 4 items
 		const newRotation =
-			rotation - extraRotations - (360 / items.length) * newIndex;
+			rotation -
+			extraRotations -
+			(360 / items.length) * newIndex +
+			offset;
 		setRotation(newRotation);
 		setResultIndex(newIndex);
 	};
@@ -93,7 +100,7 @@ const RandomChooser = () => {
 	};
 
 	const handleSavePreset = () => {
-		const newPresets = [...presets, { text: items.join(" ") }];
+		const newPresets = [...presets, { options: items }];
 		setPresets(newPresets);
 		localStorage.setItem(
 			"DECISION_MAKER_PRESETS",
@@ -101,8 +108,17 @@ const RandomChooser = () => {
 		);
 	};
 
-	const handleLoadPreset = (text) => {
-		setItems(text.split(" "));
+	const handleLoadPreset = (options) => {
+		setItems(options);
+	};
+
+	const handleDeletePreset = (index) => {
+		const newPresets = presets.filter((_, i) => i !== index);
+		setPresets(newPresets);
+		localStorage.setItem(
+			"DECISION_MAKER_PRESETS",
+			JSON.stringify(newPresets)
+		);
 	};
 
 	return (
@@ -110,6 +126,7 @@ const RandomChooser = () => {
 			<Box
 				display="flex"
 				justifyContent="center"
+				alignItems="center"
 				mb={4}
 				position="relative"
 			>
@@ -129,6 +146,7 @@ const RandomChooser = () => {
 						alignItems: "center",
 						background: theme.palette.background.paper,
 						boxShadow: theme.shadows[4],
+						overflow: "hidden",
 					}}
 				>
 					<svg
@@ -197,35 +215,8 @@ const RandomChooser = () => {
 			</Box>
 
 			<Box mb={4}>
-				<TextField
-					fullWidth
-					variant="outlined"
-					value={inputValue}
-					onChange={(e) => setInputValue(e.target.value)}
-					placeholder="Add new option"
-					sx={{ mb: 2 }}
-				/>
-				<Box display="flex" justifyContent="space-between">
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={handleAddItem}
-					>
-						Add Option
-					</Button>
-					<Button
-						variant="outlined"
-						color="primary"
-						onClick={handleSavePreset}
-					>
-						Save Preset
-					</Button>
-				</Box>
-			</Box>
-
-			<Box mb={4}>
 				<Typography variant="h6" gutterBottom>
-					Current Options
+					<Text k="app.decision.currentOption" />
 				</Typography>
 				<Box display="flex" flexWrap="wrap" gap={1}>
 					{items.map((item, index) => (
@@ -240,6 +231,33 @@ const RandomChooser = () => {
 				</Box>
 			</Box>
 
+			<Box mb={4}>
+				<TextField
+					fullWidth
+					variant="outlined"
+					value={inputValue}
+					onChange={(e) => setInputValue(e.target.value)}
+					placeholder="Add new option"
+					sx={{ mb: 2 }}
+				/>
+				<Box display="flex" justifyContent="space-between">
+					<Button
+						variant="contained"
+						color="primary"
+						onClick={handleAddItem}
+					>
+						<Text k="app.decision.addOption" />
+					</Button>
+					<Button
+						variant="outlined"
+						color="primary"
+						onClick={handleSavePreset}
+					>
+						<Text k="app.decision.savePreset" />
+					</Button>
+				</Box>
+			</Box>
+
 			{presets.length > 0 && (
 				<Box>
 					<Typography variant="h6" gutterBottom>
@@ -249,9 +267,22 @@ const RandomChooser = () => {
 						{presets.map((preset, index) => (
 							<ListItemButton
 								key={index}
-								onClick={() => handleLoadPreset(preset.text)}
+								onClick={() => handleLoadPreset(preset.options)}
 							>
-								<ListItemText primary={preset.text} />
+								<ListItemText
+									primary={preset.options.join(", ")}
+								/>
+								<ListItemSecondaryAction>
+									<IconButton
+										edge="end"
+										aria-label="delete"
+										onClick={() =>
+											handleDeletePreset(index)
+										}
+									>
+										<DeleteIcon />
+									</IconButton>
+								</ListItemSecondaryAction>
 							</ListItemButton>
 						))}
 					</List>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
-import AppList from "@/components/AppList";
+import AppList from "@/components/AppGallery";
 import Search from "@/components/SearchBox";
 import Tips from "@/components/Tips";
 import Bookmark from "@/components/Bookmark";
@@ -11,6 +11,8 @@ import translator from "@/utils/translator";
 import { useAction } from "@/contexts/action";
 import { defaultLocale } from "src/site.config";
 import { useLocale } from "@/contexts/locale";
+import { isCapacitor } from "@/utils/platform";
+import fetch from "node-fetch";
 
 export async function getStaticProps({ locale = defaultLocale }) {
 	const appData = getAllApps(true);
@@ -19,11 +21,35 @@ export async function getStaticProps({ locale = defaultLocale }) {
 
 	const trans = new translator(dic, locale);
 
+	if (isCapacitor()) {
+		await Promise.all(
+			appData.map(async (app) => {
+				if (app.icon && app.icon.startsWith("/api/")) {
+					try {
+						const iconUrl = `http://localhost:3000${app.icon}`;
+						const response = await fetch(iconUrl);
+						const arrayBuffer = await response.arrayBuffer();
+						const buffer = Buffer.from(arrayBuffer);
+						const base64 = buffer.toString("base64");
+						const mimeType = response.headers.get("content-type");
+						app.icon = `data:${mimeType};base64,${base64}`;
+					} catch (error) {
+						console.error(
+							`Failed to convert icon to base64 for app ${app.id}:`,
+							error
+						);
+					}
+				}
+			})
+		);
+	}
+
 	const pageProps = {
 		currentPage: {
 			title: trans.use("homePage.meta.title"),
 			description: trans.use("homePage.meta.description"),
 			path: "/",
+			dicKey: "homePage.meta.title",
 		},
 		appData: appData.filter((app) => app.status !== "alpha"),
 		dic: JSON.stringify(dic),
@@ -35,7 +61,7 @@ export async function getStaticProps({ locale = defaultLocale }) {
 	};
 }
 
-export default function Index({ appData }: any) {
+const Index = React.memo(({ appData }: any) => {
 	const { setAction } = useAction();
 	const { locale } = useLocale();
 
@@ -86,4 +112,8 @@ export default function Index({ appData }: any) {
 			</Box>
 		</Box>
 	);
-}
+});
+
+Index.displayName = "Index";
+
+export default Index;

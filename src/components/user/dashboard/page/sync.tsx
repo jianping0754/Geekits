@@ -15,7 +15,7 @@ export default class extends React.Component<{}, State> {
     }
     sync() {
         const { mode } = this.state
-        window.loadShow();
+        window.showGlobalLoadingOverlay();
         Axios({
             method: 'post',
             url: '/ygktool/user/sync',
@@ -41,7 +41,7 @@ export default class extends React.Component<{}, State> {
                     break;
             }
         }).then(_ => {
-            window.loadHide()
+            window.hideGlobalLoadingOverlay()
         })
     }
     render() {

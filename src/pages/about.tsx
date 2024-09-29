@@ -1,3 +1,4 @@
+import React from "react";
 import OutlinedCard from "../components/OutlinedCard";
 import { styled } from "@mui/material/styles";
 import StyledMarkdown from "../components/StyledMarkdown";
@@ -65,7 +66,7 @@ export const getStaticProps: GetStaticProps = ({ locale = "zh-CN" }) => {
 	return {
 		props: {
 			currentPage: {
-				title: trans.use(""),
+				title: trans.use("aboutPage.meta.title"),
 				description: trans.use(""),
 				path: "/about",
 			},

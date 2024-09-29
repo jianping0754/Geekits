@@ -4,20 +4,20 @@ import Link from "next/link";
 import FormControl from "@mui/material/FormControl";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
-import SearchSharpIcon from "@mui/icons-material/SearchSharp";
 import GoogleIcon from "@mui/icons-material/Google";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import { AppListItem } from "../AppList";
+import { AppListItem } from "../AppGallery";
 import Text from "@/components/i18n";
 import pinyin from "js-pinyin";
 import useEventListener from "@/utils/Hooks/useEventListener";
 import type { AppData } from "@/types/index";
-import { Icon, InputBase } from "@mui/material";
+import { InputBase } from "@mui/material";
 import ReactDOMServer from "react-dom/server";
+import SearchSharpIcon from "@mui/icons-material/SearchSharp";
 
 const Shortcuts = ({ kwd }: { kwd: string }) => {
 	return (
@@ -191,7 +191,6 @@ const Search = ({ appData }: SearchProps) => {
 						gap: "1em",
 					}}
 				>
-					<SearchSharpIcon />
 					<InputBase
 						sx={{
 							borderRadius: "36px",
@@ -202,6 +201,8 @@ const Search = ({ appData }: SearchProps) => {
 									light: "1.5px solid #e0e0e0",
 									dark: "1.5px solid rgba(255, 255, 255, 0.23)",
 								}[theme.palette.mode]),
+							display: "flex",
+							alignItems: "center",
 						}}
 						fullWidth
 						inputRef={searchInputRef}
@@ -214,6 +215,9 @@ const Search = ({ appData }: SearchProps) => {
 						placeholder={ReactDOMServer.renderToString(
 							<Text k="homePage.searchBarPlaceholder" />
 						)}
+						startAdornment={
+							<SearchSharpIcon sx={{ marginRight: 1 }} />
+						}
 					/>
 				</Box>
 			</FormControl>

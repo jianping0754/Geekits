@@ -51,7 +51,7 @@ ${feedback}
 
 `;
 
-		window.loadShow();
+		window.showGlobalLoadingOverlay();
 		setIsLoading(true);
 
 		if (isWeb()) {
@@ -66,7 +66,7 @@ ${feedback}
 					window.snackbar({ message: "反馈提交失败，请稍后再试！" });
 				})
 				.finally(() => {
-					window.loadHide();
+					window.hideGlobalLoadingOverlay();
 					setIsLoading(false);
 				});
 		} else {
@@ -85,7 +85,7 @@ ${feedback}
 					});
 				})
 				.finally(() => {
-					window.loadHide();
+					window.hideGlobalLoadingOverlay();
 					setIsLoading(false);
 				});
 		}
@@ -101,8 +101,25 @@ ${feedback}
 
 	return (
 		<PaperBackground contentWidth={800}>
-			<Typography gutterBottom align="center" variant="h4">
+			<Typography
+				sx={{
+					fontFamily: "Product Sans",
+					marginTop: 2,
+				}}
+				align="center"
+				variant="h5"
+			>
 				<Text k="feedback.hero" />
+			</Typography>
+			<Typography
+				sx={{
+					marginBottom: 4,
+				}}
+				gutterBottom
+				align="center"
+				variant="body1"
+			>
+				<Text k="feedback.subtitle" />
 			</Typography>
 			<FormControl fullWidth>
 				<TextField

@@ -12,13 +12,13 @@ declare global {
 		 * 显示加载动画
 		 */
 		snackbar(config: any): void;
-		loadShow(): void;
+		showGlobalLoadingOverlay(): void;
 		loadingDelay: Timeout;
 		setHeaderButton: (component: any) => void;
 		/**
 		 * 隐藏加载动画
 		 */
-		loadHide(): void;
+		hideGlobalLoadingOverlay(): void;
 		setRightDrawer(content, icon?): void;
 		menu: any;
 		loadingDelay: number;

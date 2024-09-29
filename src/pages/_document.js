@@ -1,6 +1,6 @@
 import React from "react";
 import Document, { Html, Head, Main, NextScript } from "next/document";
-import { apiConfig } from "../site.config";
+import { apiConfig, appstore, playstore } from "../site.config";
 
 class MyDocument extends Document {
 	static async getInitialProps(ctx) {
@@ -26,6 +26,14 @@ class MyDocument extends Document {
 			<Html>
 				<Head>
 					<meta charSet="utf-8" />
+					<meta
+						name="apple-itunes-app"
+						content={`app-id=${appstore.appId}`}
+					/>
+					<meta
+						name="google-play-app"
+						content={`app-id=${playstore.appId}`}
+					/>
 					<link
 						rel="apple-touch-icon"
 						sizes="57x57"

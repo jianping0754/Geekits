@@ -1,3 +1,4 @@
+import React from "react";
 import { HelpOutlineTwoTone } from "@mui/icons-material";
 import { useAction } from "@/contexts/action";
 import { useAppBar } from "@/contexts/appBar";
@@ -7,7 +8,7 @@ import IconButton from "@mui/material/IconButton";
 import RightDrawer from "@/components/RightDrawer";
 import { FC, useCallback, useEffect, useState } from "react";
 import { GetStaticProps } from "next";
-import { isCapacitor } from "@/utils/platform";
+import { isCapacitor, isWeb } from "@/utils/platform";
 import { defaultLocale } from "src/site.config";
 import { styled } from "@mui/material/styles";
 import appImportList from "@/utils/appEntry";
@@ -15,6 +16,7 @@ import { getAppConfig, getAppDoc } from "@/utils/appData";
 import getPaths from "@/utils/getPaths";
 import { store as frameStore } from "@/utils/Data/frameState";
 import generateSitemap from "@/utils/generateSitemap";
+import { useRouter } from "next/router";
 
 const drawerWidth: number = 260;
 
@@ -73,7 +75,11 @@ export async function getStaticPaths() {
 
 	generateSitemap(
 		paths.map((p) => {
-			return { url: `/app/` + p.params.id, changefreq: "monthly", priority: 0.7 };
+			return {
+				url: `/app/` + p.params.id,
+				changefreq: "monthly",
+				priority: 0.7,
+			};
 		})
 	);
 
@@ -90,7 +96,13 @@ export const getStaticProps: GetStaticProps = ({
 	const { id: currentId } = ctx.params;
 
 	const appConfig = getAppConfig(currentId as string, {
-		requiredKeys: ["name", "status", "freeSize", "platform"],
+		requiredKeys: [
+			"name",
+			"seoOptimizedDescription",
+			"status",
+			"freeSize",
+			"platform",
+		],
 		locale: locale,
 	});
 
@@ -98,11 +110,16 @@ export const getStaticProps: GetStaticProps = ({
 
 	const dic = require("../../data/i18n.json");
 
+	console.log("***", appConfig.name, locale);
+
 	return {
 		props: {
 			currentPage: {
 				title: appConfig.name,
-				description: appConfig.description || "",
+				description:
+					appConfig.seoOptimizedDescription ||
+					appConfig.description ||
+					"",
 				path: "/app/" + appConfig.id,
 			},
 			dic: JSON.stringify(dic),
@@ -118,7 +135,6 @@ const SidebarToggle = ({ handleToggle }) => {
 		<IconButton
 			aria-label="Switch drawer"
 			onClick={handleToggle}
-			edge="end"
 			size="large"
 			sx={
 				{
@@ -141,7 +157,8 @@ const AppContainer = ({ appConfig, appDoc }) => {
 	const { setAction } = useAction();
 	const { appBar, setAppBar } = useAppBar();
 	const { locale } = useLocale();
-
+	const router = useRouter();
+	const { id } = router.query;
 	const loadLink =
 		appConfig.status === "stable" || appConfig.status === "beta"
 			? appConfig.id
@@ -159,9 +176,27 @@ const AppContainer = ({ appConfig, appDoc }) => {
 		}
 
 		return () => {
-			window.loadHide();
+			// window.hideGlobalLoadingOverlay();
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!isWeb()) {
+			const localTitle = document.querySelector("#navbar-localTitle");
+			const localizedAppConfig = getAppConfig(id as string, {
+				requiredKeys: [
+					"name",
+					"seoOptimizedDescription",
+					"status",
+					"freeSize",
+					"platform",
+				],
+				locale: locale,
+			});
+			appConfig = localizedAppConfig;
+			localTitle.textContent = appConfig.name;
+		}
+	}, [locale, id]);
 
 	const feedback = useCallback(() => {
 		if (!FeedbackComp) {

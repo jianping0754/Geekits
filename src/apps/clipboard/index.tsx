@@ -233,7 +233,7 @@ export default class extends React.Component<{}, ComponentState> {
 		socket.on("message", (msg: any) => {
 			if (msg.deviceId === deviceId) {
 				console.log("clint message");
-				window.loadHide();
+				window.hideGlobalLoadingOverlay();
 				// 接收到本机消息后清空草稿
 				if (msg.type === "text") {
 					this.setState({
@@ -252,7 +252,7 @@ export default class extends React.Component<{}, ComponentState> {
 		});
 	}
 	sendMsg() {
-		window.loadShow();
+		window.showGlobalLoadingOverlay();
 		const metaDate = new Date().toLocaleTimeString();
 		const { textData, fileData, token, socket, pwd, deviceId } = this.state;
 		textData !== "" &&

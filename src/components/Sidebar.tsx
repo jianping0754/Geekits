@@ -31,65 +31,13 @@ import { Theme, useMediaQuery } from "@mui/material";
 import { useSidebar } from "@/contexts/sidebar";
 import Text from "./i18n";
 import { isIOS, isWeb } from "@/utils/platform";
+import useNotifications from "@/utils/Hooks/useNotification";
+import { Badge } from "@mui/material";
 
 const drawerWidth = 260;
 
 // necessary for content to be below app bar
 const Toolbar = styled("nav")(({ theme }) => theme.mixins.toolbar);
-
-const User = ({ handleLogin }: any) => {
-	const [user, setUser]: [user: userInfoFromLocal | null, setUser: any] =
-		useState(null);
-	useEffect(() => {
-		setUser(getUserInfo());
-	}, [handleLogin]);
-	const attr = user
-		? {
-				href: "/user",
-				component: Link,
-		  }
-		: {
-				onClick: () => {
-					loginDialogStore.dispatch({ type: "loginDialog/opened" });
-				},
-		  };
-	return (
-		<>
-			<ListItem button {...attr}>
-				<ListItemAvatar>
-					<Avatar
-						sx={{ borderRadius: "0" }}
-						alt="Cindy Baker"
-						src="/logo/v3/512.png"
-					/>
-				</ListItemAvatar>
-				<ListItemText
-					primary={
-						<Typography
-							component="span"
-							variant="h6"
-							color="textPrimary"
-						>
-							云极客工具
-						</Typography>
-					}
-					secondary={
-						<>
-							<Typography
-								component="span"
-								variant="body2"
-								sx={{ display: "inline" }}
-								color="textSecondary"
-							>
-								{user ? user.name : "未登录"}
-							</Typography>
-						</>
-					}
-				/>
-			</ListItem>
-		</>
-	);
-};
 
 const LinkWrapper = ({ href, text, Icon, handleClick, sx, ...props }) => {
 	if (text === "<divider />") {
@@ -122,55 +70,6 @@ const LinkWrapper = ({ href, text, Icon, handleClick, sx, ...props }) => {
 	);
 };
 
-const list = [
-	{
-		Icon: <HomeOutlinedIcon />,
-		text: <Text k="navbar.home" />,
-		href: "/",
-	},
-	{
-		Icon: <Settings />,
-		text: <Text k="navbar.settings" />,
-		href: "/settings",
-	},
-	{
-		Icon: <MessageOutlinedIcon />,
-		text: <Text k="navbar.feedback" />,
-		href: "/feedback",
-		// href: "https://support.qq.com/product/421719",
-	},
-	!isIOS() && {
-		Icon: <VolunteerActivismOutlinedIcon />,
-		text: <Text k="navbar.donation" />,
-		href: "/donate",
-	},
-	{
-		Icon: <GitHubIcon />,
-		text: "GitHub",
-		href: repo,
-		sx: {
-			display: {
-				sm: "none",
-			},
-		},
-	},
-	{
-		Icon: <InfoOutlinedIcon />,
-		text: "<divider />",
-		href: "/about",
-	},
-	{
-		Icon: <InfoOutlinedIcon />,
-		text: <Text k="navbar.about" />,
-		href: "/about",
-	},
-	{
-		Icon: <TimerOutlined />,
-		text: <Text k="navbar.log" />,
-		href: "/notification",
-	},
-];
-
 const Sidebar = () => {
 	// const history = useHistory()
 
@@ -188,31 +87,62 @@ const Sidebar = () => {
 		}
 	};
 
-	// const drawer = (
-	// 	<>
-	// 		{/* <Alert severity="info">
-	// 			您正在使用新版本，如有任何问题欢迎随时反馈。
-	// 			<MuiLink href="https://v1.ygktool.com">返回旧版</MuiLink>
-	// 		</Alert> */}
-	// 		{/* <List className={clsx({ [classes.hoverBlur]: isBlur })}> */}
-	// 		<List sx={{ pr: "20px" }}>
-	// 			{list.length &&
-	// 				list.map((item) => (
-	// 					<React.Fragment key={item.href}>
-	// 						<LinkWrapper
-	// 							handleClick={closeDrawer}
-	// 							href={item.href}
-	// 							text={item.text}
-	// 							Icon={item.Icon}
-	// 						/>
-	// 					</React.Fragment>
-	// 				))}
-	// 		</List>
-	// 		<Box padding={1}>
-	// 			<Shortcuts />
-	// 		</Box>
-	// 	</>
-	// );
+	const [notifications] = useNotifications();
+	const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+	const list = [
+		{
+			Icon: <HomeOutlinedIcon />,
+			text: <Text k="navbar.home" />,
+			href: "/",
+		},
+		{
+			Icon: <Settings />,
+			text: <Text k="navbar.settings" />,
+			href: "/settings",
+		},
+		{
+			Icon: <MessageOutlinedIcon />,
+			text: <Text k="navbar.feedback" />,
+			href: "/feedback",
+			// href: "https://support.qq.com/product/421719",
+		},
+		!isIOS() && {
+			Icon: <VolunteerActivismOutlinedIcon />,
+			text: <Text k="navbar.donation" />,
+			href: "/donate",
+		},
+
+		{
+			Icon: <InfoOutlinedIcon />,
+			text: "<divider />",
+			href: "/about",
+		},
+		{
+			Icon: <InfoOutlinedIcon />,
+			text: <Text k="navbar.about" />,
+			href: "/about",
+		},
+		{
+			Icon: <GitHubIcon />,
+			text: "GitHub",
+			href: repo,
+			// sx: {
+			// 	display: {
+			// 		sm: "none",
+			// 	},
+			// },
+		},
+		{
+			Icon: (
+				<Badge badgeContent={unreadCount} color="error">
+					<TimerOutlined />
+				</Badge>
+			),
+			text: <Text k="navbar.log" />,
+			href: "/changelog",
+		},
+	];
 
 	const drawer = (
 		<Box
@@ -260,6 +190,11 @@ const Sidebar = () => {
 								/>
 							</ListItemAvatar>
 							<ListItemText
+								sx={{
+									"& .MuiListItemText-primary": {
+										fontFamily: "Product Sans",
+									},
+								}}
 								primary={<Text k="navbar.copyright.title" />}
 								secondary={
 									<Text k="navbar.copyright.subtitle" />
@@ -271,9 +206,6 @@ const Sidebar = () => {
 			</Box>
 		</Box>
 	);
-	// history.listen(() => {
-	// 	setIsBlur(testBlur());
-	// });
 
 	return (
 		<Box

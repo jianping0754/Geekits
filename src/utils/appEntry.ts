@@ -25,6 +25,9 @@ const appImportList: Record<string, ComponentType> = {
 	dic_char: dynamic(() => import("../apps/dic_char"), {
 		ssr: false,
 	}),
+	url_cleaner: dynamic(() => import("../apps/url_cleaner"), {
+		ssr: false,
+	}),
 	fuel_consumption_calculator: dynamic(
 		() => import("../apps/fuel_consumption_calculator"),
 		{
@@ -70,6 +73,9 @@ const appImportList: Record<string, ComponentType> = {
 	qrcode: dynamic(() => import("../apps/qrcode"), {
 		ssr: false,
 	}),
+	tax_calculator: dynamic(() => import("../apps/tax_calculator"), {
+		ssr: false,
+	}),
 	mimetype: dynamic(() => import("../apps/mimetype"), {
 		ssr: false,
 	}),
@@ -77,6 +83,9 @@ const appImportList: Record<string, ComponentType> = {
 		ssr: false,
 	}),
 	html2jsx: dynamic(() => import("../apps/html2jsx"), {
+		ssr: false,
+	}),
+	icon_generator: dynamic(() => import("../apps/icon_generator"), {
 		ssr: false,
 	}),
 	chatai: dynamic(() => import("../apps/chatai"), {
@@ -92,6 +101,9 @@ const appImportList: Record<string, ComponentType> = {
 		ssr: false,
 	}),
 	grid_splitter: dynamic(() => import("../apps/grid_splitter"), {
+		ssr: false,
+	}),
+	base64toimg: dynamic(() => import("../apps/base64toimg"), {
 		ssr: false,
 	}),
 	radio_signal_location_checker: dynamic(

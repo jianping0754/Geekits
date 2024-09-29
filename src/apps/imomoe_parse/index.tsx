@@ -73,7 +73,7 @@ export default class extends React.Component<{}, ComponentState> {
 		});
 	}
 	loadCommentsFromServer() {
-		window.loadShow();
+		window.showGlobalLoadingOverlay();
 		const { url } = this.state;
 		function loadJosnp() {
 			var VideoListJson;
@@ -97,7 +97,7 @@ export default class extends React.Component<{}, ComponentState> {
 			});
 		}
 		loadJosnp().then(() => {
-			window.loadHide();
+			window.hideGlobalLoadingOverlay();
 			// @ts-expect-error ts-migrate(2304) FIXME: Cannot find name 'VideoListJson'.
 			this.setState({ data: VideoListJson });
 		});

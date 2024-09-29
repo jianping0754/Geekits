@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Text from "@/components/i18n";
 import { ThemeProvider } from "@mui/material/styles";
@@ -6,7 +7,6 @@ import { store as frameStore } from "@/utils/Data/frameState";
 import { Analytics } from "@vercel/analytics/react";
 import { Device } from "@capacitor/device";
 import customTheme from "@/utils/theme";
-import { useMediaQuery } from "@mui/material";
 import { LocaleProvider } from "@/contexts/locale";
 import { isWeb } from "@/utils/platform.js";
 
@@ -27,43 +27,52 @@ async function getDeviceLanguage() {
 	return value;
 }
 
-function MainApp({ Component, pageProps }: AppProps) {
-	// const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
+const MainApp = React.memo(({ Component, pageProps }: AppProps) => {
+	const router = useRouter();
 	const [prefersDarkMode, setPrefersDarkMode] = useState(false);
-
-    useEffect(() => {
-        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setPrefersDarkMode(isDarkMode);
-    }, []);
-
-    useEffect(() => {
-        const handleChange = (event: MediaQueryListEvent) => {
-            setPrefersDarkMode(event.matches);
-        };
-
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        mediaQuery.addEventListener('change', handleChange);
-
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, []);
-
 	const [framed, setFramed] = useState<Boolean>(true);
-
-	// The auto-detected locale from NextJS
-	// If user has no preferred locale, use auto
 	const [preferredLocale, setPreferredLocale] = useState(pageProps.locale);
 
 	useEffect(() => {
+		const isDarkMode = window.matchMedia(
+			"(prefers-color-scheme: dark)"
+		).matches;
+		setPrefersDarkMode(isDarkMode);
+
+		const handleChange = (event: MediaQueryListEvent) => {
+			setPrefersDarkMode(event.matches);
+		};
+
+		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+		mediaQuery.addEventListener("change", handleChange);
+
+		return () => {
+			mediaQuery.removeEventListener("change", handleChange);
+		};
+	}, []);
+
+	useEffect(() => {
 		const readLocaleConfig = async () => {
-			// https://en.wikipedia.org/wiki/IETF_language_tag
 			let preferredSet = localStorage.getItem("locale");
 			if (preferredSet) {
 				if (preferredSet === "auto" && !isWeb()) {
+					// Use device language on native apps
 					setPreferredLocale(await getDeviceLanguage());
-				} else if (preferredSet !== "auto") {
-					// If user has spicified the language
+				} else if (preferredSet !== "auto" && isWeb()) {
+					// Redirect to the new locale on web
+					// If the path has locale, we should do nothing, as this has higher priority
+					// than setting locale manually in the Settings page.
+					let pathLocaleActive = router.locales.some((locale) => {
+						return window.location.pathname.includes(locale);
+					});
+
+					if (!pathLocaleActive && router.locale !== preferredSet) {
+						// Visitor is not using localized path, which means NextJS is using the default locale.
+						// But the preferred locale is not the default one, so we need to redirect to the new locale.
+						window.location.href = `/${preferredSet}${window.location.pathname}`;
+					}
+				} else {
+					// Use preferred locale on native apps
 					setPreferredLocale(preferredSet);
 				}
 			}
@@ -73,7 +82,10 @@ function MainApp({ Component, pageProps }: AppProps) {
 	}, []);
 
 	useEffect(() => {
-		frameStore.subscribe(() => setFramed(frameStore.getState().value));
+		const unsubscribe = frameStore.subscribe(() =>
+			setFramed(frameStore.getState().value)
+		);
+		return () => unsubscribe();
 	}, []);
 
 	const localizedDic = useMemo(
@@ -81,10 +93,53 @@ function MainApp({ Component, pageProps }: AppProps) {
 		[preferredLocale, pageProps.dic]
 	);
 
+	useEffect(() => {
+		if (!isWeb()) {
+			const localizedTitle =
+				localizedDic[pageProps.currentPage.dicKey] ||
+				pageProps.currentPage.title;
+
+			pageProps.currentPage.title = localizedTitle;
+		}
+	}, [pageProps.currentPage.title]);
+
 	const theme = useMemo(
 		() => customTheme(prefersDarkMode),
 		[prefersDarkMode]
 	);
+
+	useEffect(() => {
+		let loadTimer: NodeJS.Timeout;
+
+		const handleRouteChangeStart = () => {
+			loadTimer = setTimeout(() => {
+				window.showGlobalLoadingOverlay();
+			}, 0);
+		};
+
+		const handleRouteChangeComplete = () => {
+			clearTimeout(loadTimer);
+			window.hideGlobalLoadingOverlay();
+		};
+
+		if (isWeb()) {
+			router.events.on("routeChangeStart", handleRouteChangeStart);
+			router.events.on("routeChangeComplete", handleRouteChangeComplete);
+			router.events.on("routeChangeError", handleRouteChangeComplete);
+
+			return () => {
+				router.events.off("routeChangeStart", handleRouteChangeStart);
+				router.events.off(
+					"routeChangeComplete",
+					handleRouteChangeComplete
+				);
+				router.events.off(
+					"routeChangeError",
+					handleRouteChangeComplete
+				);
+			};
+		}
+	}, [router]);
 
 	const {
 		currentPage = {
@@ -103,11 +158,9 @@ function MainApp({ Component, pageProps }: AppProps) {
 					language={preferredLocale}
 				>
 					{hideFrame ? (
-						<>
-							<Component {...pageProps} />
-						</>
+						<Component {...pageProps} />
 					) : (
-						<Layout enableFrame={framed} currentPage={currentPage}>
+						<Layout currentPage={currentPage} enableFrame={framed}>
 							<Component {...pageProps} />
 						</Layout>
 					)}
@@ -116,7 +169,9 @@ function MainApp({ Component, pageProps }: AppProps) {
 			</ThemeProvider>
 		</LocaleProvider>
 	);
-}
+});
+
+MainApp.displayName = "MainApp";
 
 // Only uncomment this method if you have blocking data requirements for
 // every single page in your application. This disables the ability to

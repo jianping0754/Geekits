@@ -7,6 +7,7 @@ channel: media
 freeSize: true
 platform:
     - web
+seoOptimizedDescription: "使用浏览器便捷录制屏幕，无需安装任何软件。完全免费。"
 ---
 
 ## 设备要求
