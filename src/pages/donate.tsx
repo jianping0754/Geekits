@@ -31,12 +31,19 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import Popover from "@mui/material/Popover";
 import Image from "next/image";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import {
+	PaymentElement,
+	useStripe,
+	useElements,
+} from "@stripe/react-stripe-js";
+import Text from "@/components/i18n";
 
 const FREE_DONATION_WAYS = [
 	{
@@ -92,25 +99,28 @@ const FREE_DONATION_WAYS = [
 const PAIED_DONATION_WAYS = [
 	{
 		title: "请我一杯咖啡",
-		amount: "¥6.00",
+		amount: 6,
+		tag: "¥6.00",
 		icon: <Coffee />,
 		href: "",
 	},
 	{
 		title: "请我一杯奶茶",
-		amount: "¥15.00",
+		tag: "¥15.00",
+		amount: 15,
 		icon: <LocalBar />,
 		href: "",
 	},
 	{
 		title: "请我一顿饭",
-		amount: "¥25.00",
+		tag: "¥25.00",
+		amount: 25,
 		icon: <Fastfood />,
 		href: "",
 	},
 	{
 		title: "自定义金额",
-		amount: "",
+		tag: "",
 		icon: <AttachMoney />,
 		href: "",
 	},
@@ -152,6 +162,10 @@ export const getStaticProps: GetStaticProps = ({ locale = defaultLocale }) => {
 	};
 };
 
+const stripePromise = loadStripe(
+	process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+);
+
 const ProductItem = ({ href, ...props }) => (
 	<Grid item xs={6} sm={4}>
 		<OutlinedCard padding={1}>
@@ -188,6 +202,10 @@ const ProductItem = ({ href, ...props }) => (
 );
 const PaidOptionItem = ({ href, ...props }) => {
 	const [open, setOpen] = useState(false);
+	const [paymentIntent, setPaymentIntent] = useState(null);
+	const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
+		"gumroad"
+	);
 
 	const handleClick = () => {
 		setOpen(true);
@@ -195,6 +213,28 @@ const PaidOptionItem = ({ href, ...props }) => {
 
 	const handleClose = () => {
 		setOpen(false);
+		setExpandedAccordion("gumroad");
+	};
+
+	const handleAccordionChange =
+		(panel: string) =>
+		(event: React.SyntheticEvent, isExpanded: boolean) => {
+			setExpandedAccordion(isExpanded ? panel : false);
+		};
+
+	const handleStripePayment = async () => {
+		const response = await fetch("/api/create-payment-intent", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				amount: props.amount,
+				description: props.title,
+			}),
+		});
+		const data = await response.json();
+		setPaymentIntent(data.clientSecret);
 	};
 
 	return (
@@ -209,10 +249,10 @@ const PaidOptionItem = ({ href, ...props }) => {
 						<ListItemAvatar>
 							<Avatar>{props.icon}</Avatar>
 						</ListItemAvatar>
-						{!!props.amount ? (
+						{!!props.tag ? (
 							<ListItemText
 								primary={props.title}
-								secondary={props.amount}
+								secondary={props.tag}
 							/>
 						) : (
 							<ListItemText primary={props.title} />
@@ -224,7 +264,10 @@ const PaidOptionItem = ({ href, ...props }) => {
 			<Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
 				<DialogTitle>选择支付方式</DialogTitle>
 				<DialogContent>
-					<Accordion defaultExpanded>
+					<Accordion
+						expanded={expandedAccordion === "gumroad"}
+						onChange={handleAccordionChange("gumroad")}
+					>
 						<AccordionSummary expandIcon={<ExpandMoreIcon />}>
 							<Typography>Gumroad</Typography>
 						</AccordionSummary>
@@ -233,7 +276,7 @@ const PaidOptionItem = ({ href, ...props }) => {
 								fullWidth
 								variant="contained"
 								color="primary"
-								href={`https://gumroad.com/l/your-product-link?wanted=true&price=${props.amount}`}
+								href={`https://ygeeker.gumroad.com/coffee`}
 								target="_blank"
 								rel="noopener noreferrer"
 							>
@@ -241,7 +284,10 @@ const PaidOptionItem = ({ href, ...props }) => {
 							</Button>
 						</AccordionDetails>
 					</Accordion>
-					<Accordion>
+					<Accordion
+						expanded={expandedAccordion === "wechat"}
+						onChange={handleAccordionChange("wechat")}
+					>
 						<AccordionSummary expandIcon={<ExpandMoreIcon />}>
 							<Typography>微信支付</Typography>
 						</AccordionSummary>
@@ -257,7 +303,10 @@ const PaidOptionItem = ({ href, ...props }) => {
 							</Box>
 						</AccordionDetails>
 					</Accordion>
-					<Accordion>
+					<Accordion
+						expanded={expandedAccordion === "alipay"}
+						onChange={handleAccordionChange("alipay")}
+					>
 						<AccordionSummary expandIcon={<ExpandMoreIcon />}>
 							<Typography>支付宝</Typography>
 						</AccordionSummary>
@@ -273,6 +322,33 @@ const PaidOptionItem = ({ href, ...props }) => {
 							</Box>
 						</AccordionDetails>
 					</Accordion>
+					<Accordion
+						expanded={expandedAccordion === "stripe"}
+						onChange={handleAccordionChange("stripe")}
+					>
+						<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+							<Typography>Stripe</Typography>
+						</AccordionSummary>
+						<AccordionDetails>
+							{paymentIntent ? (
+								<Elements
+									stripe={stripePromise}
+									options={{ clientSecret: paymentIntent }}
+								>
+									<StripePaymentForm />
+								</Elements>
+							) : (
+								<Button
+									fullWidth
+									variant="contained"
+									color="primary"
+									onClick={handleStripePayment}
+								>
+									使用 Stripe 支付
+								</Button>
+							)}
+						</AccordionDetails>
+					</Accordion>
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleClose} color="primary">
@@ -284,6 +360,57 @@ const PaidOptionItem = ({ href, ...props }) => {
 	);
 };
 
+const StripePaymentForm = () => {
+	const stripe = useStripe();
+	const elements = useElements();
+	const [error, setError] = useState(null);
+	const [processing, setProcessing] = useState(false);
+
+	const handleSubmit = async (event) => {
+		event.preventDefault();
+
+		if (!stripe || !elements) {
+			return;
+		}
+
+		setProcessing(true);
+
+		const result = await stripe.confirmPayment({
+			elements,
+			confirmParams: {
+				return_url: `${window.location.origin}/donation-success`,
+			},
+		});
+
+		if (result.error) {
+			setError(result.error.message);
+		}
+
+		setProcessing(false);
+	};
+
+	return (
+		<form onSubmit={handleSubmit}>
+			<PaymentElement />
+			<Button
+				type="submit"
+				fullWidth
+				variant="contained"
+				color="primary"
+				disabled={!stripe || processing}
+				sx={{ mt: 2 }}
+			>
+				{processing ? "处理中..." : "支付"}
+			</Button>
+			{error && (
+				<Typography color="error" sx={{ mt: 2 }}>
+					{error}
+				</Typography>
+			)}
+		</form>
+	);
+};
+
 export default function Donate() {
 	const { setAction } = useAction();
 
@@ -291,20 +418,6 @@ export default function Donate() {
 
 	return (
 		<PaperBackground contentWidth={900}>
-			<Box height="200px">
-				<Placeholder illustrationUrl="/illustration/undraw_fatherhood_-7-i19.svg" />
-			</Box>
-
-			<Typography variant="body1">
-				感谢您对我的开源项目的关注。Geekits
-				已经开发了五年多，这期间我投入了大量的时间、精力和金钱，包括购买域名和服务器。作为一名没有收入的学生，这一切对我来说是非常昂贵的。但是，我仍然坚守着对这个项目的热爱。
-				你可以通过捐赠来支持我，帮助我继续开发这个项目，使其对更多人有所帮助。非常感谢你的支持！
-				<br />
-				<br />
-				所有的收益都将用于开发、维护、运行 Geekits。
-			</Typography>
-
-			<br />
 			<Alert severity="info">
 				以下方式都是免费的，你只需要动动手指，我和你都能从中获益。
 			</Alert>
@@ -321,7 +434,9 @@ export default function Donate() {
 			<br />
 			<br />
 
-			<Typography variant="h6">其他方式</Typography>
+			<Typography variant="h6">
+				<Text k="donation.paid.title" />
+			</Typography>
 
 			<br />
 
@@ -372,6 +487,18 @@ export default function Donate() {
 					</Button>
 				</Box>
 			</TableContainer>
+			<Box height="200px">
+				<Placeholder illustrationUrl="/illustration/undraw_fatherhood_-7-i19.svg" />
+			</Box>
+
+			<Typography variant="body2" textAlign="center" gutterBottom>
+				感谢您对我的开源项目的关注。Geekits
+				已经开发了五年多，这期间我投入了大量的时间、精力和金钱，包括购买域名和服务器。这一切对我来说是非常昂贵的。但是，我仍然坚守着对这个项目的热爱。
+				你可以通过捐赠来支持我，帮助我继续开发这个项目，使其对更多人有所帮助。非常感谢你的支持！
+				<br />
+				<br />
+				所有的收益都将用于开发、维护、运行 Geekits。
+			</Typography>
 		</PaperBackground>
 	);
 }
