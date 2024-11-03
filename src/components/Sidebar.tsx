@@ -10,9 +10,8 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import { repo } from "../site.config";
+import { repo, releaseNotesUrl } from "../site.config";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -24,22 +23,37 @@ import { styled } from "@mui/material/styles";
 import {
 	Cloud,
 	OpenInBrowser,
+	OpenInNewRounded,
 	Settings,
 	TimerOutlined,
 } from "@mui/icons-material";
-import { Theme, useMediaQuery } from "@mui/material";
+import { ListItemButton, Theme, useMediaQuery } from "@mui/material";
 import { useSidebar } from "@/contexts/sidebar";
 import Text from "./i18n";
 import { isIOS, isWeb } from "@/utils/platform";
-import useNotifications from "@/utils/Hooks/useNotification";
-import { Badge } from "@mui/material";
 
 const drawerWidth = 260;
 
 // necessary for content to be below app bar
 const Toolbar = styled("nav")(({ theme }) => theme.mixins.toolbar);
 
-const LinkWrapper = ({ href, text, Icon, handleClick, sx, ...props }) => {
+type SidebarItem = {
+	Icon: React.ReactNode;
+	text: React.ReactNode | string;
+	href: string;
+	sx?: any; // Ensure sx is optional
+	isExternal?: boolean;
+};
+
+const LinkWrapper = ({
+	href,
+	text,
+	Icon,
+	handleClick,
+	sx,
+	isExternal,
+	...props
+}: SidebarItem & { handleClick?: () => void }) => {
 	if (text === "<divider />") {
 		return <Divider sx={{ marginY: 1 }} />;
 	}
@@ -47,8 +61,14 @@ const LinkWrapper = ({ href, text, Icon, handleClick, sx, ...props }) => {
 	const router = useRouter();
 
 	return (
-		<Link href={href} passHref legacyBehavior {...props}>
-			<ListItem
+		<Link
+			href={href}
+			passHref
+			legacyBehavior
+			target={isExternal ? "_blank" : undefined}
+			{...props}
+		>
+			<ListItemButton
 				onClick={handleClick}
 				sx={{
 					"&.Mui-selected .MuiListItemText-primary": {
@@ -60,21 +80,22 @@ const LinkWrapper = ({ href, text, Icon, handleClick, sx, ...props }) => {
 					...sx,
 				}}
 				className={router.pathname == href ? "Mui-selected" : ""}
-				button
-				key={text}
+				key={href}
 			>
 				<ListItemIcon>{Icon}</ListItemIcon>
 				<ListItemText primary={text} />
-			</ListItem>
+				{isExternal && (
+					<OpenInNewRounded
+						fontSize="small"
+						sx={{ ml: 1, opacity: 0.7 }}
+					/>
+				)}
+			</ListItemButton>
 		</Link>
 	);
 };
 
 const Sidebar = () => {
-	// const history = useHistory()
-
-	const userData = React.useContext(UserContext);
-
 	const { sidebar, setSidebar } = useSidebar();
 
 	const downXs = useMediaQuery((theme: Theme) =>
@@ -86,9 +107,6 @@ const Sidebar = () => {
 			setSidebar(true); // Should reverse as defaultly hide on mobile screen
 		}
 	};
-
-	const [notifications] = useNotifications();
-	const unreadCount = notifications.filter((n) => !n.isRead).length;
 
 	const list = [
 		{
@@ -105,14 +123,12 @@ const Sidebar = () => {
 			Icon: <MessageOutlinedIcon />,
 			text: <Text k="navbar.feedback" />,
 			href: "/feedback",
-			// href: "https://support.qq.com/product/421719",
 		},
 		!isIOS() && {
 			Icon: <VolunteerActivismOutlinedIcon />,
 			text: <Text k="navbar.donation" />,
 			href: "/donate",
 		},
-
 		{
 			Icon: <InfoOutlinedIcon />,
 			text: "<divider />",
@@ -127,20 +143,13 @@ const Sidebar = () => {
 			Icon: <GitHubIcon />,
 			text: "GitHub",
 			href: repo,
-			// sx: {
-			// 	display: {
-			// 		sm: "none",
-			// 	},
-			// },
+			isExternal: true,
 		},
 		{
-			Icon: (
-				<Badge badgeContent={unreadCount} color="error">
-					<TimerOutlined />
-				</Badge>
-			),
+			Icon: <TimerOutlined />,
 			text: <Text k="navbar.log" />,
-			href: "/changelog",
+			href: releaseNotesUrl,
+			isExternal: true,
 		},
 	];
 
@@ -166,6 +175,7 @@ const Sidebar = () => {
 										text={item.text}
 										sx={item.sx}
 										Icon={item.Icon}
+										isExternal={item.isExternal}
 									/>
 								</React.Fragment>
 							))}
