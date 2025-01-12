@@ -10,10 +10,22 @@ const appImportList: Record<string, ComponentType> = {
 	clipboard: dynamic(() => import("../apps/clipboard"), {
 		ssr: false,
 	}),
+	counter: dynamic(() => import("../apps/counter"), {
+		ssr: false,
+	}),
+	gif_maker: dynamic(() => import("../apps/gif_maker"), {
+		ssr: false,
+	}),
+	color_picker: dynamic(() => import("../apps/color_picker"), {
+		ssr: false,
+	}),
 	date_calculator: dynamic(() => import("../apps/date_calculator"), {
 		ssr: false,
 	}),
 	decision: dynamic(() => import("../apps/decision"), {
+		ssr: false,
+	}),
+	text_compare: dynamic(() => import("../apps/text_compare"), {
 		ssr: false,
 	}),
 	pdf_merger: dynamic(() => import("../apps/pdf_merger"), {
@@ -26,6 +38,9 @@ const appImportList: Record<string, ComponentType> = {
 		ssr: false,
 	}),
 	dic_char: dynamic(() => import("../apps/dic_char"), {
+		ssr: false,
+	}),
+	reg_exp_tester: dynamic(() => import("../apps/reg_exp_tester"), {
 		ssr: false,
 	}),
 	url_cleaner: dynamic(() => import("../apps/url_cleaner"), {

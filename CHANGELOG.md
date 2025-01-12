@@ -1,4 +1,17 @@
-## 2.1.3 (2024-11-04)
+## 2.3.0 (2025-01-12)
+
+-   feat: Add gif maker app
+-   feat: Add counter app
+
+## 2.2.3 (2025-01-09)
+
+-   feat: Add dark mode
+-   optimize: Upgrade to Next.js 14.2.20, React 18.3, MUI 6.3.1
+
+## 2.1.3 (2025-01-08)
+
+-   fix: Dark mode not working on iOS
+-   feat: Add text compare app
 
 ## 2.1.2 (2024-11-02)
 
