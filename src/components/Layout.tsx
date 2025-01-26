@@ -14,6 +14,8 @@ import { ActionProvider } from "@/contexts/action";
 import { AppBarProvider } from "@/contexts/appBar";
 import { AccountProvider } from "@/contexts/account";
 import { createClient } from "@/utils/supabase/component";
+import { Capacitor } from "@capacitor/core";
+import { Toast } from "@capacitor/toast";
 
 const Root = styled("main")<{ disableTopPadding?: boolean }>(
 	({ theme }) =>
@@ -34,8 +36,17 @@ const GlobalSnackbar = () => {
 	});
 	useEffect(() => {
 		window.snackbar = (config) => {
-			setSnackbarConfig(config);
-			setOpenSnackbar(true);
+			if (Capacitor.isNativePlatform()) {
+				// Show native toast on mobile platforms
+				Toast.show({
+					text: config.message,
+					duration: config.autoHideDuration || "short",
+					position: "bottom",
+				});
+			} else {
+				setSnackbarConfig(config);
+				setOpenSnackbar(true);
+			}
 		};
 	});
 	const handleSnackbarClose = () => {
@@ -50,7 +61,7 @@ const GlobalSnackbar = () => {
 	);
 };
 
-const Layout = ({ currentPage, children, enableFrame }) => {
+const Layout = ({ currentPage, children, enableFrame, appData }) => {
 	const [sidebar, setSidebar] = useState(true);
 	const [appBar, setAppBar] = useState(true);
 	const [action, setAction] = useState(null);
@@ -63,7 +74,6 @@ const Layout = ({ currentPage, children, enableFrame }) => {
 				data: { user },
 			} = await supabase.auth.getUser();
 			if (user) {
-				console.log("***fetching");
 				const { data, error } = await supabase
 					.from("Account")
 					.select("email, first_name, last_name, avatarUrl, uid")
@@ -111,7 +121,7 @@ const Layout = ({ currentPage, children, enableFrame }) => {
 						<meta name="description" content={activeDescription} />
 						<meta
 							name="keywords"
-							content={siteConfig.keywords.join(",")}
+							content={activeKeywords.join(",")}
 						/>
 						<meta name="author" content={siteConfig.author.name} />
 
@@ -182,6 +192,7 @@ const Layout = ({ currentPage, children, enableFrame }) => {
 						{enableFrame && (
 							<Header
 								repo={siteConfig.repo}
+								appData={appData}
 								PageAction={action}
 								title={
 									[].includes(currentPage.path)

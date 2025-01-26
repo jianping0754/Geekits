@@ -7,13 +7,13 @@ const appImportList: Record<string, ComponentType> = {
 	cem: dynamic(() => import("../apps/cem"), {
 		ssr: false,
 	}),
-	clipboard: dynamic(() => import("../apps/clipboard"), {
-		ssr: false,
-	}),
 	counter: dynamic(() => import("../apps/counter"), {
 		ssr: false,
 	}),
 	gif_maker: dynamic(() => import("../apps/gif_maker"), {
+		ssr: false,
+	}),
+	lottery: dynamic(() => import("../apps/lottery"), {
 		ssr: false,
 	}),
 	color_picker: dynamic(() => import("../apps/color_picker"), {
@@ -122,6 +122,9 @@ const appImportList: Record<string, ComponentType> = {
 		ssr: false,
 	}),
 	base64toimg: dynamic(() => import("../apps/base64toimg"), {
+		ssr: false,
+	}),
+	hotpot_timer: dynamic(() => import("../apps/hotpot_timer"), {
 		ssr: false,
 	}),
 	radio_signal_location_checker: dynamic(
