@@ -4,21 +4,21 @@ import {
 	TextField,
 	Button,
 	Typography,
-	Paper,
 	Chip,
 	Stack,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 	CircularProgress,
 	IconButton,
 	InputAdornment,
+	Accordion,
+	AccordionSummary,
+	AccordionDetails,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Capacitor } from "@capacitor/core";
 import { root } from "src/site.config";
 import OutlinedCard from "@/components/OutlinedCard";
+import { useStateWithQuery } from "use-query-sync";
 
 interface LotteryState {
 	openPrice: string;
@@ -34,18 +34,21 @@ interface LotteryState {
 }
 
 const LotteryTool: React.FC = () => {
-	const [state, setState] = useState<LotteryState>({
-		openPrice: "",
-		highPrice: "",
-		lowPrice: "",
-		closePrice: "",
-		volume: "",
-		maxNumber: 100,
-		count: 5,
-		result: [],
-		stockSymbol: "",
-		isLoading: false,
-	});
+	const [state, setState] = useStateWithQuery<LotteryState>(
+		{
+			openPrice: "",
+			highPrice: "",
+			lowPrice: "",
+			closePrice: "",
+			volume: "",
+			maxNumber: 100,
+			count: 5,
+			result: [],
+			stockSymbol: "",
+			isLoading: false,
+		},
+		{ name: "lottery" }
+	);
 
 	const generateLotteryNumbers = () => {
 		function hashPrice(price: number): number {
@@ -78,13 +81,19 @@ const LotteryTool: React.FC = () => {
 		const result = Array.from(numbers)
 			.slice(0, state.count)
 			.sort((a, b) => a - b);
-		setState((prev) => ({ ...prev, result }));
+		setState({
+			...state,
+			result,
+		});
 	};
 
 	const fetchStockData = async () => {
 		if (!state.stockSymbol) return;
 
-		setState((prev) => ({ ...prev, isLoading: true }));
+		setState({
+			...state,
+			isLoading: true,
+		});
 		try {
 			const response = await fetch(
 				Capacitor.getPlatform() === "web"
@@ -101,35 +110,58 @@ const LotteryTool: React.FC = () => {
 			}
 
 			const data = await response.json();
+			const result = data.chart?.result?.[0];
 
-			if (!data.chart?.result?.[0]) {
-				throw new Error("Invalid stock symbol");
+			if (!result?.indicators?.quote?.[0] || !result.timestamp?.length) {
+				throw new Error("Invalid or incomplete stock data");
 			}
 
-			const quote = data.chart.result[0].indicators.quote[0];
-			const timestamp = data.chart.result[0].timestamp;
+			const quote = result.indicators.quote[0];
+			const timestamp = result.timestamp;
 			const lastIndex = timestamp.length - 1;
 
-			setState((prev) => ({
-				...prev,
+			// Validate that all required data points exist
+			if (
+				!quote.open?.[0] ||
+				!quote.high?.[lastIndex] ||
+				!quote.low?.[lastIndex] ||
+				!quote.close?.[lastIndex] ||
+				!quote.volume?.[lastIndex]
+			) {
+				throw new Error("Missing required stock data points");
+			}
+
+			setState({
+				...state,
 				openPrice: quote.open[0].toFixed(2),
 				highPrice: quote.high[lastIndex].toFixed(2),
 				lowPrice: quote.low[lastIndex].toFixed(2),
 				closePrice: quote.close[lastIndex].toFixed(2),
 				volume: Math.floor(quote.volume[lastIndex]).toString(),
 				isLoading: false,
-			}));
+			});
 		} catch (error) {
 			console.error("Failed to fetch stock data:", error);
-			setState((prev) => ({ ...prev, isLoading: false }));
-			// You might want to add a snackbar or other UI element to show the error
+			setState({
+				...state,
+				isLoading: false,
+				openPrice: "",
+				highPrice: "",
+				lowPrice: "",
+				closePrice: "",
+				volume: "",
+			});
+			// TODO: Add error notification to user
 		}
 	};
 
 	const handleChange =
 		(field: keyof LotteryState) =>
 		(event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
-			setState((prev) => ({ ...prev, [field]: event.target.value }));
+			setState({
+				...state,
+				[field]: event.target.value,
+			});
 		};
 
 	return (
@@ -163,6 +195,71 @@ const LotteryTool: React.FC = () => {
 						fullWidth
 					/>
 
+					<Accordion>
+						<AccordionSummary
+							expandIcon={<ExpandMoreIcon />}
+							aria-controls="stock-details-content"
+							id="stock-details-header"
+						>
+							<Typography>Stock Details</Typography>
+						</AccordionSummary>
+						<AccordionDetails>
+							<Stack spacing={2}>
+								<Box
+									sx={{
+										display: "grid",
+										gridTemplateColumns: "1fr 1fr",
+										gap: 2,
+									}}
+								>
+									<TextField
+										label="Opening Price"
+										value={state.openPrice}
+										onChange={handleChange("openPrice")}
+										type="number"
+										inputProps={{ step: "0.01" }}
+										fullWidth
+									/>
+
+									<TextField
+										label="High Price"
+										value={state.highPrice}
+										onChange={handleChange("highPrice")}
+										type="number"
+										inputProps={{ step: "0.01" }}
+										fullWidth
+									/>
+
+									<TextField
+										label="Low Price"
+										value={state.lowPrice}
+										onChange={handleChange("lowPrice")}
+										type="number"
+										inputProps={{ step: "0.01" }}
+										fullWidth
+									/>
+
+									<TextField
+										label="Closing Price"
+										value={state.closePrice}
+										onChange={handleChange("closePrice")}
+										type="number"
+										inputProps={{ step: "0.01" }}
+										fullWidth
+									/>
+								</Box>
+
+								<TextField
+									label="Volume"
+									value={state.volume}
+									onChange={handleChange("volume")}
+									type="number"
+									fullWidth
+								/>
+							</Stack>
+						</AccordionDetails>
+					</Accordion>
+
 					<Box
 						sx={{
 							display: "grid",
@@ -171,92 +268,22 @@ const LotteryTool: React.FC = () => {
 						}}
 					>
 						<TextField
-							label="Opening Price"
-							value={state.openPrice}
-							onChange={handleChange("openPrice")}
+							label="Maximum Number"
+							value={state.maxNumber}
+							onChange={handleChange("maxNumber")}
 							type="number"
-							inputProps={{ step: "0.01" }}
+							inputProps={{ min: 1 }}
 							fullWidth
 						/>
 
 						<TextField
-							label="High Price"
-							value={state.highPrice}
-							onChange={handleChange("highPrice")}
+							label="Number Count"
+							value={state.count}
+							onChange={handleChange("count")}
 							type="number"
-							inputProps={{ step: "0.01" }}
+							inputProps={{ min: 1, max: state.maxNumber }}
 							fullWidth
 						/>
-
-						<TextField
-							label="Low Price"
-							value={state.lowPrice}
-							onChange={handleChange("lowPrice")}
-							type="number"
-							inputProps={{ step: "0.01" }}
-							fullWidth
-						/>
-
-						<TextField
-							label="Closing Price"
-							value={state.closePrice}
-							onChange={handleChange("closePrice")}
-							type="number"
-							inputProps={{ step: "0.01" }}
-							fullWidth
-						/>
-					</Box>
-
-					<TextField
-						label="Volume"
-						value={state.volume}
-						onChange={handleChange("volume")}
-						type="number"
-						fullWidth
-					/>
-
-					<Box
-						sx={{
-							display: "grid",
-							gridTemplateColumns: "1fr 1fr",
-							gap: 2,
-						}}
-					>
-						<FormControl fullWidth>
-							<InputLabel>Maximum Number</InputLabel>
-							<Select
-								value={state.maxNumber}
-								label="Maximum Number"
-								onChange={(event) =>
-									setState((prev) => ({
-										...prev,
-										maxNumber: event.target.value as number,
-									}))
-								}
-							>
-								<MenuItem value={50}>50</MenuItem>
-								<MenuItem value={100}>100</MenuItem>
-								<MenuItem value={200}>200</MenuItem>
-							</Select>
-						</FormControl>
-
-						<FormControl fullWidth>
-							<InputLabel>Number Count</InputLabel>
-							<Select
-								value={state.count}
-								label="Number Count"
-								onChange={(event) =>
-									setState((prev) => ({
-										...prev,
-										count: event.target.value as number,
-									}))
-								}
-							>
-								<MenuItem value={5}>5</MenuItem>
-								<MenuItem value={6}>6</MenuItem>
-								<MenuItem value={7}>7</MenuItem>
-							</Select>
-						</FormControl>
 					</Box>
 
 					<Button

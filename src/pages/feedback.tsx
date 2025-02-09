@@ -7,9 +7,10 @@ import translator from "@/utils/translator";
 import { isWeb } from "@/utils/platform";
 import { Toast } from "@capacitor/toast";
 import { Box, FormControlLabel, Typography } from "@mui/material";
-import PaperBackground from "@/components/PaperBackground";
 import Checkbox from "@mui/material/Checkbox";
 import Text from "@/components/i18n";
+import { useAction } from "@/contexts/action";
+import MainSection from "@/components/MainSection";
 
 export async function getStaticProps({ locale = "zh-CN" }) {
 	const path = "/feedback";
@@ -35,6 +36,9 @@ export default function Feedback() {
 	const [debugInfo, setDebugInfo] = React.useState(false);
 	const [isLoading, setIsLoading] = React.useState(false);
 
+	const { setAction } = useAction();
+
+	setAction(null);
 	const handleSubmit = () => {
 		if (!feedback.trim()) {
 			if (isWeb()) {
@@ -47,59 +51,34 @@ export default function Feedback() {
 			return;
 		}
 
-		const fbTemplate = `
-${feedback}
----------
-**Contact**: ${contact}
-
-**Create Date**: ${new Date().toLocaleString()}
-
-**Source Page**: [${window.location.href}](${window.location.href})
-
-**Browser**: ${window.navigator.userAgent}
-
-**Device**: ${window.navigator.platform}
-
-`;
-
 		window.showGlobalLoadingOverlay();
 		setIsLoading(true);
 
-		if (isWeb()) {
-			axios
-				.post("/api/feedback", {
-					message: fbTemplate,
-				})
-				.then(() => {
-					window.snackbar({ message: "已提交反馈，感谢您的反馈！" });
-				})
-				.catch(() => {
-					window.snackbar({ message: "反馈提交失败，请稍后再试！" });
-				})
-				.finally(() => {
-					window.hideGlobalLoadingOverlay();
-					setIsLoading(false);
-				});
-		} else {
-			axios
-				.post("https://geekits.ygeeker.com/api/feedback", {
-					message: fbTemplate,
-				})
-				.then(async () => {
-					await Toast.show({
-						text: "已提交反馈，感谢您的反馈！",
-					});
-				})
-				.catch(async (e) => {
-					await Toast.show({
-						text: "反馈提交失败，请稍后再试！" + e,
-					});
-				})
-				.finally(() => {
-					window.hideGlobalLoadingOverlay();
-					setIsLoading(false);
-				});
-		}
+		const feedbackData = {
+			message: feedback,
+			contact: contact,
+			device: window.navigator.platform,
+			system: window.navigator.userAgent,
+			appIdentifier: "Geekits Web",
+			sourceUrl: window.location.href,
+		};
+
+		const apiUrl = isWeb()
+			? "/api/feedback"
+			: "https://geekits.ygeeker.com/api/feedback";
+
+		axios
+			.post(apiUrl, feedbackData)
+			.then(() => {
+				window.snackbar({ message: "已提交反馈，感谢您的反馈！" });
+			})
+			.catch((error) => {
+				window.snackbar({ message: "反馈提交失败，请稍后再试！" });
+			})
+			.finally(() => {
+				window.hideGlobalLoadingOverlay();
+				setIsLoading(false);
+			});
 	};
 
 	const handleChange = (event) => {
@@ -111,7 +90,7 @@ ${feedback}
 	};
 
 	return (
-		<PaperBackground contentWidth={800}>
+		<MainSection>
 			<Typography
 				sx={{
 					fontFamily: "Product Sans",
@@ -176,6 +155,6 @@ ${feedback}
 					<Text k="feedback.send" />
 				</Button>
 			</Box>
-		</PaperBackground>
+		</MainSection>
 	);
 }

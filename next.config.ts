@@ -1,14 +1,10 @@
-const withPWA = require("next-pwa")({
-	dest: "public",
-	register: true,
-	skipWaiting: true,
-});
+import type { NextConfig } from "next";
 
-const isCapacitor = process.env.CAPACITOR_BUILD === "true";
+const isCapacitorBuildtime = process.env.CAPACITOR_BUILD === "true";
 
-module.exports = withPWA({
-	...(isCapacitor && { output: "export" }),
-	...(!isCapacitor && {
+const nextConfig: NextConfig = {
+	...(isCapacitorBuildtime && { output: "export" }),
+	...(!isCapacitorBuildtime && {
 		i18n: {
 			locales: ["zh-CN", "en-US"],
 			defaultLocale: "en-US",
@@ -24,7 +20,7 @@ module.exports = withPWA({
 	images: {
 		imageSizes: [320, 480, 820, 1200, 1600],
 		domains: ["i.loli.net", "bgr.com", "www.ygeeker.com", "ygeeker.com"],
-		unoptimized: isCapacitor,
+		unoptimized: isCapacitorBuildtime,
 	},
 	webpack: function (config) {
 		config.module.rules.push({
@@ -44,4 +40,6 @@ module.exports = withPWA({
 		});
 		return config;
 	},
-});
+};
+
+module.exports = nextConfig;

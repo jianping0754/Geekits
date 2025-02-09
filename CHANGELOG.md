@@ -2,6 +2,11 @@
 
 -   feat: Add lottery app
 -   feat: Add hotpot timer app
+-   feat: Rename DrawLink to Mono Card
+-   feat: Use Feishu to send feedback
+-   feat: Toggle home page view mode
+-   feat: Move search box to the appbar for large screen
+-   fix: Hide action bar in feedback page
 
 ## 2.3.0 (2025-01-12)
 
