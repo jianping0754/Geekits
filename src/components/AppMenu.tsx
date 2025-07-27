@@ -11,6 +11,7 @@ import CodeIcon from "@mui/icons-material/Code";
 import fivkits from "@/utils/Services/fiv";
 import { isWeb } from "@/utils/platform";
 import Text from "./i18n";
+import { AppData } from "@/types/index";
 
 const PREFIX = "AppMenu";
 
@@ -96,7 +97,7 @@ const AppMenu = ({
 				}}
 			>
 				<Button
-					href={`https://github.com/RiverTwilight/ygktool/tree/dev/src/apps/${id}`}
+					href={`https://github.com/RiverTwilight/geekits/tree/dev/src/apps/${id}`}
 					aria-label="在GitHub上编辑此页面"
 					startIcon={<GitHubIcon fontSize="inherit" />}
 					variant="contained"

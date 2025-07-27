@@ -31,10 +31,12 @@ const AppListItem = ({
 	selected,
 	icon,
 }: AppListItemProps) => {
+	const isExternal = channel === "external";
 	const attr = useMemo(
 		() =>
-			channel === "external"
+			isExternal
 				? {
+						// For <a> tag
 						href: link,
 						target: "_blank",
 						rel: "noopener noreferrer",
@@ -43,7 +45,7 @@ const AppListItem = ({
 						component: id,
 						href: "/app/" + id,
 				  },
-		[status, id]
+		[status, id, link, isExternal]
 	);
 
 	const Inner = () => (
@@ -97,10 +99,39 @@ const AppListItem = ({
 	);
 
 	if (status === "beta") {
+		if (isExternal) {
+			return (
+				<OutlinedCard>
+					<a
+						{...attr}
+						style={{ textDecoration: "none", display: "block" }}
+					>
+						<Inner />
+					</a>
+				</OutlinedCard>
+			);
+		}
 		return (
 			<OutlinedCard>
 				<Inner />
 			</OutlinedCard>
+		);
+	}
+
+	if (isExternal) {
+		return (
+			<a {...attr} style={{ textDecoration: "none", display: "block" }}>
+				<Card
+					sx={{
+						textDecoration: "none",
+						"&:hover": {
+							textDecoration: "none",
+						},
+					}}
+				>
+					<Inner />
+				</Card>
+			</a>
 		);
 	}
 
@@ -160,10 +191,24 @@ const Channel = ({
 					{sortedApps.map((app) => (
 						<Grid
 							key={app.id}
-							item
-							md={viewMode === "grid" ? 3 : 6}
-							xl={viewMode === "grid" ? 2 : 4}
-							xs={viewMode === "grid" ? 6 : 12}
+							component="div"
+							size={
+								viewMode === "grid"
+									? {
+											xs: 6,
+											sm: 3,
+											md: 3,
+											lg: 2,
+											xl: 2,
+									  }
+									: {
+											xs: 12,
+											sm: 6,
+											md: 6,
+											lg: 4,
+											xl: 4,
+									  }
+							}
 							sx={{
 								display: "flex",
 								"& > *": {
